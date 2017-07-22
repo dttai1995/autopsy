@@ -66,5 +66,8 @@
         <dependency conf="autopsy_core->*" org="com.twelvemonkeys.imageio" name="imageio-thumbsdb" rev="3.2" />
         <dependency conf="autopsy_core->*" org="com.twelvemonkeys.imageio" name="imageio-core" rev="3.2" />
         <dependency conf="autopsy_core->*" org="com.twelvemonkeys.imageio" name="imageio-metadata" rev="3.2" />
+
+        <!-- For Google Vision API -->
+
 </dependencies>
 </ivy-module>

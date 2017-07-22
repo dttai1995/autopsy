@@ -1,0 +1,13 @@
+<ivy-module version="2.0">
+    <info organisation="org.sleuthkit.autopsy" module="core"/>
+      <configurations >
+        <!-- module dependencies -->
+        <conf name="autopsy_core"/>
+        
+    </configurations>
+    <dependencies>
+
+        <!-- For Google Vision API -->
+        <dependency conf="autopsy_core->*" org="com.google.cloud" name="google-cloud-vision" rev="0.20.1-beta" />
+</dependencies>
+</ivy-module>

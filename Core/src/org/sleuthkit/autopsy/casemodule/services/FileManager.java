@@ -25,6 +25,7 @@ package org.sleuthkit.autopsy.casemodule.services;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
@@ -105,6 +106,32 @@ public class FileManager implements Closeable {
         return caseDb.findAllFilesWhere("data_source_obj_id = " + dataSource.getId() + " AND " + createFileTypeInCondition(mimeTypes));
     }
 
+    public synchronized List<AbstractFile> findFilesByExtensions(Collection<String> mimeTypes) throws TskCoreException {
+        if (null == caseDb) {
+            throw new TskCoreException("File manager has been closed");
+        }
+        return caseDb.findAllFilesWhere(createFileExtensionConditions(mimeTypes));
+    }
+
+    /**
+     * Finds all files in a given data source (image, local/logical files set,
+     * etc.) with types that match one of a collection of MIME types.
+     *
+     * @param dataSource The data source.
+     * @param mimeTypes  The MIME types.
+     *
+     * @return The files.
+     *
+     * @throws TskCoreException If there is a problem querying the case
+     *                          database.
+     */
+    public synchronized List<AbstractFile> findFilesByExtensions(Content dataSource, Collection<String> mimeTypes) throws TskCoreException {
+        if (null == caseDb) {
+            throw new TskCoreException("File manager has been closed");
+        }
+        return caseDb.findAllFilesWhere("data_source_obj_id = " + dataSource.getId() + " AND " + createFileExtensionConditions(mimeTypes));
+    }
+
     /**
      * Converts a list of MIME types into an SQL "mime_type IN" condition.
      *
@@ -116,7 +143,12 @@ public class FileManager implements Closeable {
         String types = StringUtils.join(mimeTypes, "', '");
         return "mime_type IN ('" + types + "')";
     }
-
+    
+    public static String createFileExtensionConditions(Collection<String> fileExtension)
+    {
+        String type = StringUtils.join(fileExtension, "\' OR name like \'%");
+        return "name like \'%"+ type+"'";
+    }
     /**
      * Finds all files and directories with a given file name. The name search
      * is for full or partial matches and is case insensitive (a case
@@ -213,7 +245,12 @@ public class FileManager implements Closeable {
         }
         return caseDb.findFiles(dataSource, fileName);
     }
-
+    public synchronized List<AbstractFile> findPhotoFiles(Content dataSource) throws TskCoreException{
+        if (null == caseDb){
+            throw new TskCoreException("File manager has been closed");
+        }
+        return null;
+    }
     /**
      * Finds all files and directories with a given file name and parent file or
      * directory name in a given data source (image, local/logical files set,
