@@ -27,14 +27,19 @@ public class AndroidExtraIngestModule implements DataSourceIngestModule {
     @Override
     public ProcessResult process(Content dataSource, DataSourceIngestModuleProgress progressBar) {
        ArrayList<String> errors = new ArrayList<>();
-        progressBar.switchToDeterminate(2);
+       
+        
         FileManager fileManager = Case.getCurrentCase().getServices().getFileManager();
+      
+        try {  
+            int imageFileNo = GoogleVisionApiAnalyzer.getImageFileList(dataSource, fileManager, context).size();
+            progressBar.switchToDeterminate(1+
+                imageFileNo);
 
-        try {
             FacebookMessageAnalyzer.findFacebookMessages(dataSource, fileManager, context);
             progressBar.progress(1); 
-            GoogleVisionApiAnalyzer.findInappropriateContent(dataSource, fileManager, context);
-            progressBar.progress(2);
+            GoogleVisionApiAnalyzer.findInappropriateContent(dataSource, fileManager, context, progressBar);
+            
             if (context.dataSourceIngestIsCancelled()) {
                 return IngestModule.ProcessResult.OK;
             }

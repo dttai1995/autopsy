@@ -13,8 +13,6 @@ import com.google.cloud.vision.v1.Image;
 import com.google.cloud.vision.v1.ImageAnnotatorClient;
 import com.google.cloud.vision.v1.SafeSearchAnnotation;
 import com.google.protobuf.ByteString;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -25,7 +23,6 @@ import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.services.Blackboard;
 import org.sleuthkit.autopsy.casemodule.services.FileManager;
 import org.sleuthkit.autopsy.coreutils.Logger;
-import org.sleuthkit.autopsy.datamodel.ContentUtils;
 import org.sleuthkit.autopsy.ingest.IngestJobContext;
 import org.sleuthkit.autopsy.ingest.IngestServices;
 import org.sleuthkit.datamodel.AbstractFile;
@@ -34,8 +31,8 @@ import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.ReadContentInputStream;
-import com.google.cloud.vision.v1.ImageAnnotatorSettings;
 import java.util.Collections;
+import org.sleuthkit.autopsy.ingest.DataSourceIngestModuleProgress;
 import org.sleuthkit.autopsy.ingest.ModuleDataEvent;
 /**
  *
@@ -50,36 +47,32 @@ public class GoogleVisionApiAnalyzer {
     private final static List<String> IMAGE_EXTENSIONS = Arrays.asList(".jpg", ".jpeg", ".png", ".psd", ".nef", ".tiff", ".bmp", ".tec");
     private final static int LIKELY_LEVEL = 3;
     private final static int MAXIMUM_FILE_PER_REQUEST = 6;
-    public static void findInappropriateContent(Content dataSource, FileManager fileManager,
-            IngestJobContext context) {
+    private static List<AbstractFile> absFiles = null;
+    public static int progressDeterminator = 1; 
+    private static DataSourceIngestModuleProgress classProgressBar = null;
+    public static List getImageFileList(Content dataSource, FileManager fileManager,
+            IngestJobContext context) throws TskCoreException
+    {
         blackboard = Case.getCurrentCase().getServices().getBlackboard();
+        absFiles = fileManager.findFilesByExtensions(dataSource, IMAGE_EXTENSIONS);
+        return absFiles;
+        
+    }
+    public static void findInappropriateContent(Content dataSource, FileManager fileManager,
+            IngestJobContext context, DataSourceIngestModuleProgress progressBar) {
+        classProgressBar =  progressBar;
+        blackboard = Case.getCurrentCase().getServices().getBlackboard();
+        
         try {
-            List<AbstractFile> absFiles = fileManager.findFilesByExtensions(dataSource, IMAGE_EXTENSIONS);
+            List<AbstractFile> absFiles = getImageFileList(dataSource, fileManager, context);
                
             int count = 0 ;
-            List<AbstractFile> fileList = new ArrayList();
+            List<AbstractFile> fileList = new ArrayList<>();
             for (AbstractFile abstractFile : absFiles) {
                 count++;
                 fileList.add(abstractFile);
                 if (fileList.size() == MAXIMUM_FILE_PER_REQUEST) {
-//                    InputStream iStream = new ReadContentInputStream(abstractFile);
-//                    //Find inappropriate content
-//                    try {
-//                            
-//                        System.out.println("File: " + count);
-//                        count++;
-//                        if (detectInappropriateContent(iStream)) {
-//                            BlackboardArtifact bba = abstractFile.newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT);
-//                            bba.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, moduleName, moduleName));
-//                            blackboard.indexArtifact(bba);
-//                        }
-//                    } catch (IOException e) {
-//                        logger.log(Level.SEVERE, "Error when adding file to the method");
-//                    } catch (Blackboard.BlackboardException e) {
-//                        logger.log(Level.SEVERE, "Cannot index the blackboard");
-//                    }
                     detectInappropriateContent(fileList);
-                    //Add it to blackboard
                     count = 0;
                     fileList.clear();
                 }
@@ -141,6 +134,10 @@ public class GoogleVisionApiAnalyzer {
                 }
 
             }
+            progressDeterminator+=1;
+            classProgressBar.progress(1 + progressDeterminator);
+            System.out.println(progressDeterminator);
+            
         }
         } catch (Exception e) {
             System.out.println("Error when sending to the API");
